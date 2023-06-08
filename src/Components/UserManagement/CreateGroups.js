@@ -10,7 +10,7 @@ function CreateGroup({ setUserTable }) {
 
   // function for create group button
   async function handleCreateGroup() {
-    let validation = validator.isAlphanumeric(c_groupname)
+    let validation = validator.isAlpha(c_groupname)
 
     if (validation) {
       if (c_groupname !== "") {

@@ -42,7 +42,15 @@ function CreateUsers({ setUserTable }) {
         appDispatch({ type: "errorToast", data: "Please contact an administrator." })
       }
     } else {
-      appDispatch({ type: "errorToast", data: "Please check input fields again." })
+      if (!validator.isAlphanumeric(username)) {
+        appDispatch({ type: "errorToast", data: "Please input valid username." })
+      }
+      if (!validatePassword(password)) {
+        appDispatch({ type: "errorToast", data: "Please input valid password." })
+      }
+      if (email !== "" && !email_checker) {
+        appDispatch({ type: "errorToast", data: "Please input valid email." })
+      }
     }
   }
 
