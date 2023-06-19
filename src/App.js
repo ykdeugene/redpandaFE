@@ -87,8 +87,8 @@ function App() {
           <NavBar />
           <Routes>
             <Route path="/testing" element={<Testing />} />
-            <Route path="/" element={state.loggedIn ? <Blank /> : <LoginPage />} />
-            {/* <Route path="/" element={state.loggedIn ? <TMSMain /> : <LoginPage />} /> */}
+            {/* <Route path="/" element={state.loggedIn ? <Blank /> : <LoginPage />} /> */}
+            <Route path="/" element={state.loggedIn ? <TMSMain /> : <LoginPage />} />
             <Route path="/edit" element={state.loggedIn ? <EditPage /> : <LoginPage />} />
             <Route path="/main" element={state.loggedIn ? isAdmin ? <UserManagement /> : <ErrorPage /> : <LoginPage />} />
           </Routes>

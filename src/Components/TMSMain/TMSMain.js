@@ -36,7 +36,7 @@ function TMSMain() {
 
   async function fetchApplication() {
     try {
-      const response = await Axios.get(`/tms/applications`)
+      const response = await Axios.get(`/app/get`)
       if (response.data.result === "BSJ370") {
         appDispatch({ type: "loggedOut" })
         appDispatch({ type: "errorToast", data: "Token expired. You have been logged out." })
@@ -54,7 +54,7 @@ function TMSMain() {
 
   async function fetchGroups() {
     try {
-      const response = await Axios.get(`/all_groups`)
+      const response = await Axios.get(`/get/grouplist`)
       if (response.data.result === "BSJ370") {
         appDispatch({ type: "loggedOut" })
         appDispatch({ type: "errorToast", data: "Token expired. You have been logged out." })
@@ -63,7 +63,7 @@ function TMSMain() {
         appDispatch({ type: "errorToast", data: "Please contact an administrator. (fetchGroups() elseif)" })
         return
       }
-      setGroups(response.data)
+      setGroups(response.data.result)
     } catch (e) {
       console.log(e)
       appDispatch({ type: "errorToast", data: "Please contact an administrator.(fetchGroups() catch)" })
@@ -72,8 +72,9 @@ function TMSMain() {
 
   async function fetchPlans() {
     let applicationName = selectedApp.App_Acronym
+
     try {
-      const response = await Axios.post(`/tms/plans`, { applicationName })
+      const response = await Axios.post(`/plan/get`, { Plan_appAcronym: applicationName })
       if (response.data.result === "BSJ370") {
         appDispatch({ type: "loggedOut" })
         appDispatch({ type: "errorToast", data: "Token expired. You have been logged out." })
@@ -91,8 +92,11 @@ function TMSMain() {
 
   async function fetchTasks() {
     let applicationName = selectedApp.App_Acronym
+
     try {
-      const response = await Axios.post(`/tms/tasks`, { applicationName })
+      console.log({ Task_app_Acronym: applicationName })
+      const response = await Axios.post(`/task/get`, { Task_app_Acronym: applicationName })
+      console.log(response.data)
       if (response.data.result === "BSJ370") {
         appDispatch({ type: "loggedOut" })
         appDispatch({ type: "errorToast", data: "Token expired. You have been logged out." })
@@ -176,15 +180,15 @@ function TMSMain() {
   }
 
   async function fetchPermission() {
-    const responsePL = await Axios.post(`/group/checkgroup`, { group_name: "Project Lead" })
-    const responsePM = await Axios.post(`/group/checkgroup`, { group_name: "Project Manager" })
-    const responseCreate = await Axios.post(`/group/checkgroup`, { group_name: selectedApp.App_permit_Create })
-    const responseOpen = await Axios.post(`/group/checkgroup`, { group_name: selectedApp.App_permit_Open })
-    const responseTodo = await Axios.post(`/group/checkgroup`, { group_name: selectedApp.App_permit_toDoList })
-    const responseDoing = await Axios.post(`/group/checkgroup`, { group_name: selectedApp.App_permit_Doing })
-    const responseDone = await Axios.post(`/group/checkgroup`, { group_name: selectedApp.App_permit_Done })
+    const responsePL = await Axios.post(`/auth/checkgroup`, { groupName: "ProjectLead" })
+    const responsePM = await Axios.post(`/auth/checkgroup`, { groupName: "ProjectManager" })
+    const responseCreate = await Axios.post(`/auth/checkgroup`, { groupName: selectedApp.App_permit_Create })
+    const responseOpen = await Axios.post(`/auth/checkgroup`, { groupName: selectedApp.App_permit_Open })
+    const responseTodo = await Axios.post(`/auth/checkgroup`, { groupName: selectedApp.App_permit_toDoList })
+    const responseDoing = await Axios.post(`/auth/checkgroup`, { groupName: selectedApp.App_permit_Doing })
+    const responseDone = await Axios.post(`/auth/checkgroup`, { groupName: selectedApp.App_permit_Done })
 
-    setPermission({ pl: responsePL.data, pm: responsePM.data, create: responseCreate.data, open: responseOpen.data, todo: responseTodo.data, doing: responseDoing.data, done: responseDone.data })
+    setPermission({ pl: responsePL.data.result, pm: responsePM.data.result, create: responseCreate.data.result, open: responseOpen.data.result, todo: responseTodo.data.result, doing: responseDoing.data.result, done: responseDone.data.result })
   }
 
   useEffect(() => {
@@ -200,10 +204,17 @@ function TMSMain() {
   useEffect(() => {
     fetchApplication()
     fetchGroups()
-    fetchPlans()
-    fetchTasks()
+    // fetchPlans()
+    // fetchTasks()
     getUsername()
     fetchPermission()
+  }, [selectedApp])
+
+  useEffect(() => {
+    if (selectedApp) {
+      fetchPlans()
+      fetchTasks()
+    }
   }, [selectedApp])
 
   return (
@@ -309,9 +320,9 @@ function TMSMain() {
                       <option value=""></option>
                       {groups.map(group => {
                         return (
-                          <option selected={group.group_name === selectedEditApp.App_permit_Create} key={"create" + group.group_name} value={group.group_name}>
-                            {/* <option key={"create" + group.group_name} value={group.group_name}> */}
-                            {group.group_name}
+                          <option selected={group.groupName === selectedEditApp.App_permit_Create} key={"create" + group.groupName} value={group.groupName}>
+                            {/* <option key={"create" + group.groupName} value={group.groupName}> */}
+                            {group.groupName}
                           </option>
                         )
                       })}
@@ -325,9 +336,9 @@ function TMSMain() {
                       <option value=""></option>
                       {groups.map(group => {
                         return (
-                          <option selected={group.group_name === selectedEditApp.App_permit_Open} key={"open" + group.group_name} value={group.group_name}>
-                            {/* <option key={"open" + group.group_name} value={group.group_name}> */}
-                            {group.group_name}
+                          <option selected={group.groupName === selectedEditApp.App_permit_Open} key={"open" + group.groupName} value={group.groupName}>
+                            {/* <option key={"open" + group.groupName} value={group.groupName}> */}
+                            {group.groupName}
                           </option>
                         )
                       })}
@@ -341,9 +352,9 @@ function TMSMain() {
                       <option value=""></option>
                       {groups.map(group => {
                         return (
-                          <option selected={group.group_name === selectedEditApp.App_permit_toDoList} key={"open" + group.group_name} value={group.group_name}>
-                            {/* <option key={"open" + group.group_name} value={group.group_name}> */}
-                            {group.group_name}
+                          <option selected={group.groupName === selectedEditApp.App_permit_toDoList} key={"open" + group.groupName} value={group.groupName}>
+                            {/* <option key={"open" + group.groupName} value={group.groupName}> */}
+                            {group.groupName}
                           </option>
                         )
                       })}
@@ -359,9 +370,9 @@ function TMSMain() {
                       <option value=""></option>
                       {groups.map(group => {
                         return (
-                          <option selected={group.group_name === selectedEditApp.App_permit_Doing} key={"open" + group.group_name} value={group.group_name}>
-                            {/* <option key={"open" + group.group_name} value={group.group_name}> */}
-                            {group.group_name}
+                          <option selected={group.groupName === selectedEditApp.App_permit_Doing} key={"open" + group.groupName} value={group.groupName}>
+                            {/* <option key={"open" + group.groupName} value={group.groupName}> */}
+                            {group.groupName}
                           </option>
                         )
                       })}
@@ -375,9 +386,9 @@ function TMSMain() {
                       <option value=""></option>
                       {groups.map(group => {
                         return (
-                          <option selected={group.group_name === selectedEditApp.App_permit_Done} key={"open" + group.group_name} value={group.group_name}>
-                            {/* <option key={"open" + group.group_name} value={group.group_name}> */}
-                            {group.group_name}
+                          <option selected={group.groupName === selectedEditApp.App_permit_Done} key={"open" + group.groupName} value={group.groupName}>
+                            {/* <option key={"open" + group.groupName} value={group.groupName}> */}
+                            {group.groupName}
                           </option>
                         )
                       })}

@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react"
+import React, { useContext, useEffect, useState } from "react"
 import Axios from "axios"
 import DispatchContext from "../../DispatchContext"
 
@@ -66,6 +66,14 @@ function PlanBar({ plans, fetchPlans, permission }) {
     }
   }
 
+  useEffect(() => {
+    if (selectedPlan) {
+      fetchPlans()
+      document.getElementById("editPlanColour").value = selectedPlan.Plan_colour
+      console.log(selectedPlan)
+    }
+  }, [selectedPlan])
+
   return (
     <>
       {/* div to scroll to here!!! */}
@@ -92,7 +100,7 @@ function PlanBar({ plans, fetchPlans, permission }) {
         })}
       </div>
 
-      {/* Modal for Edit Application ===== From Here */}
+      {/* Modal for Edit Plan ===== From Here */}
       <div className="modal fade" id="planModal" data-bs-backdrop="static" data-bs-keyboard="false">
         <div className="modal-dialog modal-lg" style={{ width: "100vh" }}>
           <div className="modal-content">
@@ -147,7 +155,7 @@ function PlanBar({ plans, fetchPlans, permission }) {
         </div>
       </div>
 
-      {/* Modal for Edit Application ===== To Here */}
+      {/* Modal for Edit Plan ===== To Here */}
     </>
   )
 }

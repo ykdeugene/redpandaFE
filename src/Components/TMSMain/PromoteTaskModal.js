@@ -15,7 +15,7 @@ function PromoteTaskModal({ selectedTask, username, fetchTasks, plans, resetSetT
     try {
       const response = await Axios.post(`/tms/send_email`, { taskID, taskName, taskOwner })
       if (response) {
-        appDispatch({ type: "successToast", data: `Project Lead groups has been notified.` })
+        appDispatch({ type: "successToast", data: `ProjectLead groups has been notified.` })
       }
     } catch (e) {
       console.log(e)

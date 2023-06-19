@@ -5,24 +5,24 @@ import DispatchContext from "../../DispatchContext"
 
 function CreateApplication({ fetchApplication }) {
   const appDispatch = useContext(DispatchContext)
-  const [appName, setAppName] = useState("")
-  const [appRNum, setAppRNum] = useState("")
+  const [App_Acronym, setApp_Acronym] = useState("")
+  const [App_Rnumber, setApp_Rnumber] = useState("")
   // for offcanvas
-  const [appNameOC, setAppNameOC] = useState("")
-  const [appRNumOC, setAppRNumOC] = useState("1")
-  const [appDescription, setAppDescription] = useState("")
-  const [appStartDate, setAppStartDate] = useState(null)
-  const [appEndDate, setAppEndDate] = useState(null)
-  const [appCreate, setAppCreate] = useState("")
-  const [appOpen, setAppOpen] = useState("")
-  const [appToDo, setAppToDo] = useState("")
-  const [appDoing, setAppDoing] = useState("")
-  const [appDone, setAppDone] = useState("")
+  const [App_AcronymOC, setApp_AcronymOC] = useState("")
+  const [App_RnumberOC, setApp_RnumberOC] = useState("1")
+  const [App_Description, setApp_Description] = useState("")
+  const [App_startDate, setApp_startDate] = useState(null)
+  const [App_endDate, setApp_endDate] = useState(null)
+  const [App_permit_Create, setApp_permit_Create] = useState("")
+  const [App_permit_Open, setApp_permit_Open] = useState("")
+  const [App_permit_toDoList, setApp_permit_toDoList] = useState("")
+  const [App_permit_Doing, setApp_permit_Doing] = useState("")
+  const [App_permit_Done, setApp_permit_Done] = useState("")
   const [groups, setGroups] = useState([])
 
   async function fetchGroups() {
     try {
-      const response = await Axios.get(`/all_groups`)
+      const response = await Axios.get(`/get/grouplist`)
       if (response.data.result === "BSJ370") {
         appDispatch({ type: "loggedOut" })
         appDispatch({ type: "errorToast", data: "Token expired. You have been logged out." })
@@ -31,7 +31,7 @@ function CreateApplication({ fetchApplication }) {
         appDispatch({ type: "errorToast", data: "Please contact an administrator. (fetchGroups() elseif)" })
         return
       }
-      setGroups(response.data)
+      setGroups(response.data.result)
     } catch (e) {
       console.log(e)
       appDispatch({ type: "errorToast", data: "Please contact an administrator.(fetchGroups() catch)" })
@@ -39,26 +39,26 @@ function CreateApplication({ fetchApplication }) {
   }
 
   async function handleFastCreateApplication() {
-    let mandatoryFieldsCheck = !Boolean(appName === "" || appRNum === "")
-    let rNumValidate = validator.isInt(appRNum, { gt: 0, allow_leading_zeroes: false })
-    let appNameValidate = validator.isAlpha(appName)
+    let mandatoryFieldsCheck = !Boolean(App_Acronym === "" || App_Rnumber === "")
+    let rNumValidate = validator.isInt(App_Rnumber, { gt: 0, allow_leading_zeroes: false })
+    let appNameValidate = validator.isAlpha(App_Acronym)
 
     let validation = Boolean(mandatoryFieldsCheck && rNumValidate && appNameValidate)
 
     if (validation) {
       try {
-        const [appDescription, appStartDate, appEndDate, appOpen, appToDo, appDoing, appDone] = ["", "", "", "", "", "", ""]
-        const response = await Axios.post("/tms/create_application", { appName, appRNum, appDescription, appStartDate, appEndDate, appCreate, appOpen, appToDo, appDoing, appDone })
-        if (response.data === true) {
+        const [App_Description, App_startDate, App_endDate, App_permit_Create, App_permit_Open, App_permit_toDoList, App_permit_Doing, App_permit_Done] = ["", "", "", "", "", "", "", ""]
+        const response = await Axios.post("/app/create", { App_Acronym, App_Rnumber, App_Description, App_startDate, App_endDate, App_permit_Create, App_permit_Open, App_permit_toDoList, App_permit_Doing, App_permit_Done })
+        if (response.data.result === "true") {
           appDispatch({ type: "successToast", data: "New Application is created." })
-          setAppName("")
-          setAppRNum("")
+          setApp_Acronym("")
+          setApp_Rnumber("")
           fetchApplication()
         } else if (response.data.result === "BSJ370") {
           appDispatch({ type: "loggedOut" })
           appDispatch({ type: "errorToast", data: "Token expired. You have been logged out." })
         } else {
-          console.log(appStartDate, appEndDate)
+          console.log(App_startDate, App_endDate)
           appDispatch({ type: "errorToast", data: "New Application not created. Please check input fields again." })
         }
       } catch (e) {
@@ -71,38 +71,45 @@ function CreateApplication({ fetchApplication }) {
   }
 
   async function handleSubmitCreateApplication() {
-    let mandatoryFieldsCheck = !Boolean(appNameOC === "" || appRNumOC === "")
-    let rNumValidate = validator.isInt(appRNumOC, { gt: 0, allow_leading_zeroes: false })
-    let appNameValidate = validator.isAlpha(appNameOC)
-    let appDescriptionValidate = validator.isAscii(appDescription)
+    let mandatoryFieldsCheck = !Boolean(App_AcronymOC === "" || App_RnumberOC === "")
+    let rNumValidate = validator.isInt(App_RnumberOC, { gt: 0, allow_leading_zeroes: false })
+    let appNameValidate = validator.isAlpha(App_AcronymOC)
+    let appDescriptionValidate
+    if (App_Description !== "") {
+      appDescriptionValidate = validator.isAscii(App_Description)
+    } else {
+      appDescriptionValidate = true
+    }
     let dateValidate
 
-    if (appStartDate === "" && appEndDate === "") {
-      setAppStartDate(null)
-      setAppEndDate(null)
+    if (App_startDate === "" && App_endDate === "") {
+      setApp_startDate(null)
+      setApp_endDate(null)
       dateValidate = true
     } else {
-      dateValidate = Boolean(appEndDate >= appStartDate)
+      dateValidate = Boolean(App_endDate >= App_startDate)
     }
 
     let validation = Boolean(mandatoryFieldsCheck && rNumValidate && appNameValidate && dateValidate && appDescriptionValidate)
 
     if (validation) {
       try {
-        const response = await Axios.post("/tms/create_application", { appNameOC, appRNumOC, appDescription, appStartDate, appEndDate, appCreate, appOpen, appToDo, appDoing, appDone })
+        const response = await Axios.post("/app/create", { App_Acronym: App_AcronymOC, App_Rnumber: App_RnumberOC, App_Description, App_startDate, App_endDate, App_permit_Create, App_permit_Open, App_permit_toDoList, App_permit_Doing, App_permit_Done })
 
-        if (response.data === true) {
+        if (response.data.result === "true") {
           appDispatch({ type: "successToast", data: "New Application is created." })
-          setAppNameOC("")
-          setAppRNumOC("1")
-          setAppDescription("")
-          setAppStartDate(null)
-          setAppEndDate(null)
-          setAppCreate("")
-          setAppOpen("")
-          setAppToDo("")
-          setAppDoing("")
-          setAppDone("")
+          setApp_AcronymOC("")
+          setApp_RnumberOC("1")
+          setApp_Acronym("")
+          setApp_Rnumber("1")
+          setApp_Description("")
+          setApp_startDate(null)
+          setApp_endDate(null)
+          setApp_permit_Create("")
+          setApp_permit_Open("")
+          setApp_permit_toDoList("")
+          setApp_permit_Doing("")
+          setApp_permit_Done("")
           fetchApplication()
           document.getElementById("createAppplicationForm").reset()
         } else if (response.data.result === "BSJ370") {
@@ -128,9 +135,9 @@ function CreateApplication({ fetchApplication }) {
     <>
       <div className="d-flex justify-content-center" style={{ height: "10vh" }}>
         <div className="input-group mb-2" style={{ height: "5vh", width: "90vh" }}>
-          <input onChange={e => setAppName(e.target.value)} value={appName} placeholder="New Application Name" type="text" className="form-control" />
-          <input onChange={e => setAppRNum(e.target.value)} placeholder="Application R-Number" type="text" value={appRNum} className="form-control" />
-          {!Boolean(!appName && !appRNum) ? (
+          <input onChange={e => setApp_Acronym(e.target.value)} value={App_Acronym} placeholder="New Application Name" type="text" className="form-control" />
+          <input onChange={e => setApp_Rnumber(e.target.value)} placeholder="Application R-Number" type="text" value={App_Rnumber} className="form-control" />
+          {!Boolean(!App_Acronym && !App_Rnumber) ? (
             <button className="btn btn-primary" onClick={handleFastCreateApplication}>
               Fast Create
             </button>
@@ -157,33 +164,33 @@ function CreateApplication({ fetchApplication }) {
                 <label htmlFor="applicationName" className="form-label mb-0 mt-1">
                   Name
                 </label>
-                <input onChange={e => setAppNameOC(e.target.value)} value={appNameOC} type="text" className="form-control" id="applicationName" />
+                <input onChange={e => setApp_AcronymOC(e.target.value)} value={App_AcronymOC} type="text" className="form-control" id="applicationName" />
               </div>
               <div>
                 <label htmlFor="applicationRnumber" className="form-label mb-0 mt-1">
                   R-number
                 </label>
-                <input onChange={e => setAppRNumOC(e.target.value)} value={appRNumOC} type="text" className="form-control" id="applicationRnumber" />
+                <input onChange={e => setApp_RnumberOC(e.target.value)} value={App_RnumberOC} type="text" className="form-control" id="applicationRnumber" />
               </div>
             </div>
             <div>
               <label htmlFor="applicationDescription" className="form-label mb-0 mt-1">
                 Description
               </label>
-              <textarea onChange={e => setAppDescription(e.target.value)} value={appDescription} type="text" className="form-control" id="applicationDescription" rows="10" />
+              <textarea onChange={e => setApp_Description(e.target.value)} value={App_Description} type="text" className="form-control" id="applicationDescription" rows="10" />
             </div>
             <div className="d-flex justify-content-between">
               <div>
                 <label htmlFor="applicationStartDate" className="form-label mb-0 mt-1">
                   Start Date
                 </label>
-                <input onChange={e => setAppStartDate(e.target.value)} type="date" className="form-control" id="applicationStartDate" style={{ width: "30vh" }} />
+                <input onChange={e => setApp_startDate(e.target.value)} type="date" className="form-control" id="applicationStartDate" style={{ width: "30vh" }} />
               </div>
               <div>
                 <label htmlFor="applicationEndDate" className="form-label mb-0 mt-1">
                   End Date
                 </label>
-                <input onChange={e => setAppEndDate(e.target.value)} type="date" className="form-control" id="applicationEndDate" style={{ width: "30vh" }} />
+                <input onChange={e => setApp_endDate(e.target.value)} type="date" className="form-control" id="applicationEndDate" style={{ width: "30vh" }} />
               </div>
             </div>
             <hr className="border" />
@@ -192,12 +199,12 @@ function CreateApplication({ fetchApplication }) {
               <label htmlFor="Create" className="form-label mb-0 mt-1">
                 Create
               </label>
-              <select onChange={e => setAppCreate(e.target.value)} className="form-select" id="Create" style={{ width: "30vh" }}>
+              <select onChange={e => setApp_permit_Create(e.target.value)} className="form-select" id="Create" style={{ width: "30vh" }}>
                 <option value=""></option>
                 {groups.map(group => {
                   return (
-                    <option key={"create" + group.group_name} value={group.group_name}>
-                      {group.group_name}
+                    <option key={"create" + group.groupName} value={group.groupName}>
+                      {group.groupName}
                     </option>
                   )
                 })}
@@ -207,12 +214,12 @@ function CreateApplication({ fetchApplication }) {
               <label htmlFor="Open" className="form-label mb-0 mt-1">
                 Open
               </label>
-              <select onChange={e => setAppOpen(e.target.value)} className="form-select" id="Open" style={{ width: "30vh" }}>
+              <select onChange={e => setApp_permit_Open(e.target.value)} className="form-select" id="Open" style={{ width: "30vh" }}>
                 <option value=""></option>
                 {groups.map(group => {
                   return (
-                    <option key={"open" + group.group_name} value={group.group_name}>
-                      {group.group_name}
+                    <option key={"open" + group.groupName} value={group.groupName}>
+                      {group.groupName}
                     </option>
                   )
                 })}
@@ -222,12 +229,12 @@ function CreateApplication({ fetchApplication }) {
               <label htmlFor="To-Do" className="form-label mb-0 mt-1">
                 To-Do
               </label>
-              <select onChange={e => setAppToDo(e.target.value)} className="form-select" id="To-Do" style={{ width: "30vh" }}>
+              <select onChange={e => setApp_permit_toDoList(e.target.value)} className="form-select" id="To-Do" style={{ width: "30vh" }}>
                 <option value=""></option>
                 {groups.map(group => {
                   return (
-                    <option key={"toDo" + group.group_name} value={group.group_name}>
-                      {group.group_name}
+                    <option key={"toDo" + group.groupName} value={group.groupName}>
+                      {group.groupName}
                     </option>
                   )
                 })}
@@ -237,12 +244,12 @@ function CreateApplication({ fetchApplication }) {
               <label htmlFor="Doing" className="form-label mb-0 mt-1">
                 Doing
               </label>
-              <select onChange={e => setAppDoing(e.target.value)} className="form-select" id="Doing" style={{ width: "30vh" }}>
+              <select onChange={e => setApp_permit_Doing(e.target.value)} className="form-select" id="Doing" style={{ width: "30vh" }}>
                 <option value=""></option>
                 {groups.map(group => {
                   return (
-                    <option key={"doing" + group.group_name} value={group.group_name}>
-                      {group.group_name}
+                    <option key={"doing" + group.groupName} value={group.groupName}>
+                      {group.groupName}
                     </option>
                   )
                 })}
@@ -252,12 +259,12 @@ function CreateApplication({ fetchApplication }) {
               <label htmlFor="Done" className="form-label mb-0 mt-1">
                 Done
               </label>
-              <select onChange={e => setAppDone(e.target.value)} className="form-select" id="Done" style={{ width: "30vh" }}>
+              <select onChange={e => setApp_permit_Done(e.target.value)} className="form-select" id="Done" style={{ width: "30vh" }}>
                 <option value=""></option>
                 {groups.map(group => {
                   return (
-                    <option key={"done" + group.group_name} value={group.group_name}>
-                      {group.group_name}
+                    <option key={"done" + group.groupName} value={group.groupName}>
+                      {group.groupName}
                     </option>
                   )
                 })}
