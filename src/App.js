@@ -19,13 +19,15 @@ import { ToastContainer, toast } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 // Configuring Axios
 Axios.defaults.baseURL = "http://localhost:6060"
-Axios.defaults.headers.common["Authorization"] = `Bearer ${localStorage.getItem("token")}`
+Axios.defaults.headers.common["Authorization"] = `Bearer ${localStorage.getItem(
+  "token"
+)}`
 
 function App() {
   // Information for redering ONLY after check has updated the values
   const initialState = {
     loggedIn: Boolean(localStorage.getItem("token")),
-    token: localStorage.getItem("token")
+    token: localStorage.getItem("token"),
   }
 
   // Engine to run dispatch context in order to update values onto state context
@@ -34,7 +36,9 @@ function App() {
       case "loggedIn":
         draft.loggedIn = true
         draft.token = action.data.jwt
-        Axios.defaults.headers.common["Authorization"] = `Bearer ${action.data.jwt}`
+        Axios.defaults.headers.common[
+          "Authorization"
+        ] = `Bearer ${action.data.jwt}`
         return
       case "loggedOut":
         draft.loggedIn = false
@@ -88,11 +92,30 @@ function App() {
           <Routes>
             <Route path="/testing" element={<Testing />} />
             {/* <Route path="/" element={state.loggedIn ? <Blank /> : <LoginPage />} /> */}
-            <Route path="/" element={state.loggedIn ? <TMSMain /> : <LoginPage />} />
-            <Route path="/edit" element={state.loggedIn ? <EditPage /> : <LoginPage />} />
-            <Route path="/main" element={state.loggedIn ? isAdmin ? <UserManagement /> : <ErrorPage /> : <LoginPage />} />
+            <Route
+              path="/"
+              element={state.loggedIn ? <TMSMain /> : <LoginPage />}
+            />
+            <Route
+              path="/edit"
+              element={state.loggedIn ? <EditPage /> : <LoginPage />}
+            />
+            <Route
+              path="/main"
+              element={
+                state.loggedIn ? (
+                  isAdmin ? (
+                    <UserManagement />
+                  ) : (
+                    <ErrorPage />
+                  )
+                ) : (
+                  <LoginPage />
+                )
+              }
+            />
           </Routes>
-          <ToastContainer position="bottom-right" autoClose={1250} />
+          <ToastContainer position="bottom-right" autoClose={3000} />
         </BrowserRouter>
       </DispatchContext.Provider>
     </StateContext.Provider>
