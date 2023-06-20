@@ -1,5 +1,7 @@
 import React, { useContext, useState, useEffect } from "react"
 import Axios from "axios"
+import validator from "validator"
+import { Modal } from "bootstrap"
 import DispatchContext from "../../DispatchContext"
 import CreateApplication from "./CreateApplication"
 import CreateTask from "./CreateTask"
@@ -29,7 +31,7 @@ function TMSMain() {
     open: false,
     todo: false,
     doing: false,
-    done: false,
+    done: false
   })
 
   async function getUsername() {
@@ -40,7 +42,7 @@ function TMSMain() {
       console.log(e)
       appDispatch({
         type: "errorToast",
-        data: "Please contact an administrator.",
+        data: "Please contact an administrator."
       })
     }
   }
@@ -52,13 +54,13 @@ function TMSMain() {
         appDispatch({ type: "loggedOut" })
         appDispatch({
           type: "errorToast",
-          data: "Token expired. You have been logged out.",
+          data: "Token expired. You have been logged out."
         })
         return
       } else if (response.data === false) {
         appDispatch({
           type: "errorToast",
-          data: "Please contact an administrator. (fetchApplication elseif)",
+          data: "Please contact an administrator. (fetchApplication elseif)"
         })
         return
       }
@@ -67,7 +69,7 @@ function TMSMain() {
       console.log(e)
       appDispatch({
         type: "errorToast",
-        data: "Please contact an administrator. (fetchApplication catch(e))",
+        data: "Please contact an administrator. (fetchApplication catch(e))"
       })
     }
   }
@@ -79,13 +81,13 @@ function TMSMain() {
         appDispatch({ type: "loggedOut" })
         appDispatch({
           type: "errorToast",
-          data: "Token expired. You have been logged out.",
+          data: "Token expired. You have been logged out."
         })
         return
       } else if (response.data === false) {
         appDispatch({
           type: "errorToast",
-          data: "Please contact an administrator. (fetchGroups() elseif)",
+          data: "Please contact an administrator. (fetchGroups() elseif)"
         })
         return
       }
@@ -94,7 +96,7 @@ function TMSMain() {
       console.log(e)
       appDispatch({
         type: "errorToast",
-        data: "Please contact an administrator.(fetchGroups() catch)",
+        data: "Please contact an administrator.(fetchGroups() catch)"
       })
     }
   }
@@ -104,19 +106,19 @@ function TMSMain() {
 
     try {
       const response = await Axios.post(`/plan/get`, {
-        Plan_appAcronym: applicationName,
+        Plan_appAcronym: applicationName
       })
       if (response.data.result === "BSJ370") {
         appDispatch({ type: "loggedOut" })
         appDispatch({
           type: "errorToast",
-          data: "Token expired. You have been logged out.",
+          data: "Token expired. You have been logged out."
         })
         return
       } else if (response.data === false) {
         appDispatch({
           type: "errorToast",
-          data: "Please contact an administrator. (fetchApplication elseif)",
+          data: "Please contact an administrator. (fetchApplication elseif)"
         })
         return
       }
@@ -125,7 +127,7 @@ function TMSMain() {
       console.log(e)
       appDispatch({
         type: "errorToast",
-        data: "Please contact an administrator. (fetchApplication catch(e))",
+        data: "Please contact an administrator. (fetchApplication catch(e))"
       })
     }
   }
@@ -134,22 +136,21 @@ function TMSMain() {
     let applicationName = selectedApp.App_Acronym
 
     try {
-      console.log({ Task_app_Acronym: applicationName })
       const response = await Axios.post(`/task/get`, {
-        Task_app_Acronym: applicationName,
+        Task_app_Acronym: applicationName
       })
       console.log(response.data)
       if (response.data.result === "BSJ370") {
         appDispatch({ type: "loggedOut" })
         appDispatch({
           type: "errorToast",
-          data: "Token expired. You have been logged out.",
+          data: "Token expired. You have been logged out."
         })
         return
       } else if (response.data === false) {
         appDispatch({
           type: "errorToast",
-          data: "Please contact an administrator. (fetchTasks elseif)",
+          data: "Please contact an administrator. (fetchTasks elseif)"
         })
         return
       }
@@ -158,7 +159,7 @@ function TMSMain() {
       console.log(e)
       appDispatch({
         type: "errorToast",
-        data: "Please contact an administrator. (fetchTasks catch(e))",
+        data: "Please contact an administrator. (fetchTasks catch(e))"
       })
     }
   }
@@ -176,9 +177,7 @@ function TMSMain() {
   }
 
   async function handleUpdateApplication() {
-    let description = document.getElementById(
-      "editApplicationDescription"
-    ).value
+    let description = document.getElementById("editApplicationDescription").value
     let startDate = document.getElementById("editApplicationStartDate").value
     let endDate = document.getElementById("editApplicationEndDate").value
     let create = document.getElementById("editApplicationCreate").value
@@ -196,34 +195,44 @@ function TMSMain() {
       dateValidate = Boolean(endDate >= startDate)
     }
 
-    let validation = Boolean(dateValidate)
+    let descriptionValidate
+
+    if (description === "") {
+      descriptionValidate = true
+    } else {
+      descriptionValidate = validator.isAscii(description)
+    }
+
+    let validation = Boolean(dateValidate && descriptionValidate)
 
     if (validation) {
       try {
-        const response = await Axios.put(`/tms/update_application`, {
-          description,
-          startDate,
-          endDate,
-          create,
-          open,
-          toDo,
-          doing,
-          done,
-          appName,
+        const response = await Axios.post(`/app/update`, {
+          App_Description: description,
+          App_startDate: startDate,
+          App_endDate: endDate,
+          App_permit_Create: create,
+          App_permit_Open: open,
+          App_permit_toDoList: toDo,
+          App_permit_Doing: doing,
+          App_permit_Done: done,
+          App_Acronym: appName
         })
         if (response.data.result === "BSJ370") {
           appDispatch({ type: "loggedOut" })
           appDispatch({
             type: "errorToast",
-            data: "Token expired. You have been logged out.",
+            data: "Token expired. You have been logged out."
           })
           return
         }
 
-        if (response.data === true) {
+        if (response.data.result === true) {
+          Modal.getInstance(document.getElementById("appModal")).hide()
+
           appDispatch({
             type: "successToast",
-            data: `${selectedEditApp.App_Acronym} updated.`,
+            data: `${selectedEditApp.App_Acronym} updated.`
           })
           var modal = document.getElementById("appModal")
           var form = modal.querySelector("form")
@@ -235,7 +244,7 @@ function TMSMain() {
         } else {
           appDispatch({
             type: "errorToast",
-            data: `No updates made to ${selectedEditApp.App_Acronym}`,
+            data: `No updates made to ${selectedEditApp.App_Acronym}`
           })
           return
         }
@@ -243,41 +252,52 @@ function TMSMain() {
         console.log(e)
         appDispatch({
           type: "errorToast",
-          data: "Please contact an administrator. (handleUpdateApplication catch(e))",
+          data: "Please contact an administrator. (handleUpdateApplication catch(e))"
         })
       }
     } else {
-      var modal = document.getElementById("appModal")
-      var form = modal.querySelector("form")
-      form.reset()
       appDispatch({
         type: "errorToast",
-        data: `${selectedEditApp.App_Acronym} not updated. Please check input fields again.`,
+        data: `${selectedEditApp.App_Acronym} not updated.`
       })
+
+      // Please check input fields again.
+      if (!dateValidate) {
+        appDispatch({
+          type: "errorToast",
+          data: `Please check end date is later than start date.`
+        })
+      }
+      if (!descriptionValidate) {
+        appDispatch({
+          type: "errorToast",
+          data: `Please check Description again. (ASCII only)`
+        })
+      }
     }
   }
 
   async function fetchPermission() {
     const responsePL = await Axios.post(`/auth/checkgroup`, {
-      groupName: "ProjectLead",
+      groupName: "ProjectLead"
     })
     const responsePM = await Axios.post(`/auth/checkgroup`, {
-      groupName: "ProjectManager",
+      groupName: "ProjectManager"
     })
     const responseCreate = await Axios.post(`/auth/checkgroup`, {
-      groupName: selectedApp.App_permit_Create,
+      groupName: selectedApp.App_permit_Create
     })
     const responseOpen = await Axios.post(`/auth/checkgroup`, {
-      groupName: selectedApp.App_permit_Open,
+      groupName: selectedApp.App_permit_Open
     })
     const responseTodo = await Axios.post(`/auth/checkgroup`, {
-      groupName: selectedApp.App_permit_toDoList,
+      groupName: selectedApp.App_permit_toDoList
     })
     const responseDoing = await Axios.post(`/auth/checkgroup`, {
-      groupName: selectedApp.App_permit_Doing,
+      groupName: selectedApp.App_permit_Doing
     })
     const responseDone = await Axios.post(`/auth/checkgroup`, {
-      groupName: selectedApp.App_permit_Done,
+      groupName: selectedApp.App_permit_Done
     })
 
     setPermission({
@@ -287,12 +307,12 @@ function TMSMain() {
       open: responseOpen.data.result,
       todo: responseTodo.data.result,
       doing: responseDoing.data.result,
-      done: responseDone.data.result,
+      done: responseDone.data.result
     })
   }
 
   useEffect(() => {
-    applications.map((application) => {
+    applications.map(application => {
       if (application.App_Acronym === selectedEditApp.App_Acronym) {
         setSelectedApp(application)
         setSelectedEditApp("")
@@ -319,22 +339,12 @@ function TMSMain() {
 
   return (
     <div>
-      {permission.pl ? (
-        <CreateApplication fetchApplication={fetchApplication} />
-      ) : (
-        <></>
-      )}
+      {permission.pl ? <CreateApplication fetchApplication={fetchApplication} /> : <></>}
       {/* Area to view all applications ===== From Here */}
-      <div
-        className="d-flex flex-wrap align-items-center justify-content-center overflow-y-auto p-3"
-        style={{ height: "90vh" }}
-      >
-        {applications.map((application) => {
+      <div className="d-flex flex-wrap align-items-center justify-content-center overflow-y-auto p-3" style={{ height: "90vh" }}>
+        {applications.map(application => {
           return (
-            <div
-              key={application.App_Acronym}
-              className="d-flex align-items-center p-3"
-            >
+            <div key={application.App_Acronym} className="d-flex align-items-center p-3">
               <div className="input-group">
                 <a
                   id={"patch" + application.App_Acronym}
@@ -352,21 +362,17 @@ function TMSMain() {
                   <button
                     className="border btn-light btn"
                     type="button"
-                    data-bs-toggle="modal"
-                    data-bs-target="#appModal"
                     onClick={() => {
                       setSelectedEditApp(application)
-                      console.log(application)
                       setSelectedApp("")
+                      setPlans([])
+                      setTasks([])
+
+                      const editAppOC = new Modal("#appModal")
+                      editAppOC.show()
                     }}
                   >
-                    <svg
-                      className="bi bi-wrench"
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 16 16"
-                    >
+                    <svg className="bi bi-wrench" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16">
                       <path d="M.102 2.223A3.004 3.004 0 0 0 3.78 5.897l6.341 6.252A3.003 3.003 0 0 0 13 16a3 3 0 1 0-.851-5.878L5.897 3.781A3.004 3.004 0 0 0 2.223.1l2.141 2.142L4 4l-1.757.364L.102 2.223zm13.37 9.019.528.026.287.445.445.287.026.529L15 13l-.242.471-.026.529-.445.287-.287.445-.529.026L13 15l-.471-.242-.529-.026-.287-.445-.445-.287-.026-.529L11 13l.242-.471.026-.529.445-.287.287-.445.529-.026L13 11l.471.242z" />
                     </svg>
                   </button>
@@ -381,130 +387,63 @@ function TMSMain() {
       {/* Area to view all applications ===== To Here */}
 
       {/* Modal for Edit Application ===== From Here */}
-      <div
-        className="modal fade"
-        id="appModal"
-        data-bs-backdrop="static"
-        data-bs-keyboard="false"
-      >
+      <div className="modal fade" id="appModal" data-bs-backdrop="static" data-bs-keyboard="false">
         <div className="modal-dialog modal-lg">
           <div className="modal-content">
             <div className="modal-header pb-2">
               <h1 className="modal-title fs-4" id="appNameModal">
                 {selectedEditApp.App_Acronym}
               </h1>
-              <button
-                onClick={handleCloseEdit}
-                type="button"
-                className="btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Close"
-              ></button>
+              <button onClick={handleCloseEdit} type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div className="modal-body pt-1">
               <form id="editAppplicationForm">
                 <h5 className="offcanvas-title">Details</h5>
                 <div className="d-flex">
                   <div className="pe-3">
-                    <label
-                      htmlFor="editApplicationName"
-                      className="form-label mb-0 mt-1"
-                    >
+                    <label htmlFor="editApplicationName" className="form-label mb-0 mt-1">
                       Name
                     </label>
-                    <input
-                      defaultValue={selectedEditApp.App_Acronym}
-                      disabled
-                      type="text"
-                      className="form-control"
-                      id="editApplicationName"
-                    />
+                    <input defaultValue={selectedEditApp.App_Acronym} disabled type="text" className="form-control" id="editApplicationName" />
                   </div>
                   <div>
-                    <label
-                      htmlFor="editApplicationRnumber"
-                      className="form-label mb-0 mt-1"
-                    >
+                    <label htmlFor="editApplicationRnumber" className="form-label mb-0 mt-1">
                       R-number
                     </label>
-                    <input
-                      defaultValue={selectedEditApp.App_Rnumber}
-                      disabled
-                      className="form-control"
-                      id="editApplicationRnumber"
-                    />
+                    <input defaultValue={selectedEditApp.App_Rnumber} disabled className="form-control" id="editApplicationRnumber" />
                   </div>
                 </div>
                 <div>
-                  <label
-                    htmlFor="editApplicationDescription"
-                    className="form-label mb-0 mt-1"
-                  >
+                  <label htmlFor="editApplicationDescription" className="form-label mb-0 mt-1">
                     Description
                   </label>
-                  <textarea
-                    defaultValue={selectedEditApp.App_Description}
-                    type="text"
-                    className="form-control"
-                    id="editApplicationDescription"
-                    rows="12"
-                  />
+                  <textarea defaultValue={selectedEditApp.App_Description} type="text" className="form-control" id="editApplicationDescription" rows="12" />
                 </div>
                 <div className="d-flex">
                   <div className="pe-3">
-                    <label
-                      htmlFor="editApplicationStartDate"
-                      className="form-label mb-0 mt-1"
-                    >
+                    <label htmlFor="editApplicationStartDate" className="form-label mb-0 mt-1">
                       Start Date
                     </label>
-                    <input
-                      defaultValue={selectedEditApp.App_startDate}
-                      type="date"
-                      className="form-control"
-                      id="editApplicationStartDate"
-                    />
+                    <input defaultValue={selectedEditApp.App_startDate} type="date" className="form-control" id="editApplicationStartDate" />
                   </div>
                   <div>
-                    <label
-                      htmlFor="editApplicationEndDate"
-                      className="form-label mb-0 mt-1"
-                    >
+                    <label htmlFor="editApplicationEndDate" className="form-label mb-0 mt-1">
                       End Date
                     </label>
-                    <input
-                      defaultValue={selectedEditApp.App_endDate}
-                      type="date"
-                      className="form-control"
-                      id="editApplicationEndDate"
-                    />
+                    <input defaultValue={selectedEditApp.App_endDate} type="date" className="form-control" id="editApplicationEndDate" />
                   </div>
                 </div>
                 <h5 className="offcanvas-title pt-2">Access Management</h5>
                 <div className="d-flex">
                   <div className="pe-3">
-                    <label
-                      htmlFor="editApplicationCreate"
-                      className="form-label mb-0 mt-1"
-                    >
+                    <label htmlFor="editApplicationCreate" className="form-label mb-0 mt-1">
                       Create
                     </label>
-                    <select
-                      defaultValue={selectedEditApp.App_permit_Create}
-                      className="form-select"
-                      id="editApplicationCreate"
-                    >
+                    <select defaultValue={selectedEditApp.App_permit_Create} className="form-select" id="editApplicationCreate">
                       <option value=""></option>
-                      {groups.map((group) => {
+                      {groups.map(group => {
                         return (
-                          <option
-                            selected={
-                              group.groupName ===
-                              selectedEditApp.App_permit_Create
-                            }
-                            key={"create" + group.groupName}
-                            value={group.groupName}
-                          >
+                          <option selected={group.groupName === selectedEditApp.App_permit_Create} key={"create" + group.groupName} value={group.groupName}>
                             {/* <option key={"create" + group.groupName} value={group.groupName}> */}
                             {group.groupName}
                           </option>
@@ -513,28 +452,14 @@ function TMSMain() {
                     </select>
                   </div>
                   <div className="pe-3">
-                    <label
-                      htmlFor="editApplicationOpen"
-                      className="form-label mb-0 mt-1"
-                    >
+                    <label htmlFor="editApplicationOpen" className="form-label mb-0 mt-1">
                       Open
                     </label>
-                    <select
-                      defaultValue={selectedEditApp.App_permit_Open}
-                      className="form-select"
-                      id="editApplicationOpen"
-                    >
+                    <select defaultValue={selectedEditApp.App_permit_Open} className="form-select" id="editApplicationOpen">
                       <option value=""></option>
-                      {groups.map((group) => {
+                      {groups.map(group => {
                         return (
-                          <option
-                            selected={
-                              group.groupName ===
-                              selectedEditApp.App_permit_Open
-                            }
-                            key={"open" + group.groupName}
-                            value={group.groupName}
-                          >
+                          <option selected={group.groupName === selectedEditApp.App_permit_Open} key={"open" + group.groupName} value={group.groupName}>
                             {/* <option key={"open" + group.groupName} value={group.groupName}> */}
                             {group.groupName}
                           </option>
@@ -543,28 +468,14 @@ function TMSMain() {
                     </select>
                   </div>
                   <div>
-                    <label
-                      htmlFor="editApplicationToDo"
-                      className="form-label mb-0 mt-1"
-                    >
+                    <label htmlFor="editApplicationToDo" className="form-label mb-0 mt-1">
                       To-Do
                     </label>
-                    <select
-                      defaultValue={selectedEditApp.App_permit_toDoList}
-                      className="form-select"
-                      id="editApplicationToDo"
-                    >
+                    <select defaultValue={selectedEditApp.App_permit_toDoList} className="form-select" id="editApplicationToDo">
                       <option value=""></option>
-                      {groups.map((group) => {
+                      {groups.map(group => {
                         return (
-                          <option
-                            selected={
-                              group.groupName ===
-                              selectedEditApp.App_permit_toDoList
-                            }
-                            key={"open" + group.groupName}
-                            value={group.groupName}
-                          >
+                          <option selected={group.groupName === selectedEditApp.App_permit_toDoList} key={"open" + group.groupName} value={group.groupName}>
                             {/* <option key={"open" + group.groupName} value={group.groupName}> */}
                             {group.groupName}
                           </option>
@@ -575,28 +486,14 @@ function TMSMain() {
                 </div>
                 <div className="d-flex">
                   <div className="pe-3">
-                    <label
-                      htmlFor="editApplicationDoing"
-                      className="form-label mb-0 mt-1"
-                    >
+                    <label htmlFor="editApplicationDoing" className="form-label mb-0 mt-1">
                       Doing
                     </label>
-                    <select
-                      defaultValue={selectedEditApp.App_permit_Doing}
-                      className="form-select"
-                      id="editApplicationDoing"
-                    >
+                    <select defaultValue={selectedEditApp.App_permit_Doing} className="form-select" id="editApplicationDoing">
                       <option value=""></option>
-                      {groups.map((group) => {
+                      {groups.map(group => {
                         return (
-                          <option
-                            selected={
-                              group.groupName ===
-                              selectedEditApp.App_permit_Doing
-                            }
-                            key={"open" + group.groupName}
-                            value={group.groupName}
-                          >
+                          <option selected={group.groupName === selectedEditApp.App_permit_Doing} key={"open" + group.groupName} value={group.groupName}>
                             {/* <option key={"open" + group.groupName} value={group.groupName}> */}
                             {group.groupName}
                           </option>
@@ -605,28 +502,14 @@ function TMSMain() {
                     </select>
                   </div>
                   <div>
-                    <label
-                      htmlFor="editApplicationDone"
-                      className="form-label mb-0 mt-1"
-                    >
+                    <label htmlFor="editApplicationDone" className="form-label mb-0 mt-1">
                       Done
                     </label>
-                    <select
-                      defaultValue={selectedEditApp.App_permit_Done}
-                      className="form-select"
-                      id="editApplicationDone"
-                    >
+                    <select defaultValue={selectedEditApp.App_permit_Done} className="form-select" id="editApplicationDone">
                       <option value=""></option>
-                      {groups.map((group) => {
+                      {groups.map(group => {
                         return (
-                          <option
-                            selected={
-                              group.groupName ===
-                              selectedEditApp.App_permit_Done
-                            }
-                            key={"open" + group.groupName}
-                            value={group.groupName}
-                          >
+                          <option selected={group.groupName === selectedEditApp.App_permit_Done} key={"open" + group.groupName} value={group.groupName}>
                             {/* <option key={"open" + group.groupName} value={group.groupName}> */}
                             {group.groupName}
                           </option>
@@ -638,20 +521,10 @@ function TMSMain() {
               </form>
             </div>
             <div className="modal-footer">
-              <button
-                onClick={handleCloseEdit}
-                type="button"
-                className="btn btn-secondary"
-                data-bs-dismiss="modal"
-              >
+              <button onClick={handleCloseEdit} type="button" className="btn btn-secondary" data-bs-dismiss="modal">
                 Cancel
               </button>
-              <button
-                onClick={handleUpdateApplication}
-                type="button"
-                className="btn btn-primary"
-                data-bs-dismiss="modal"
-              >
+              <button onClick={handleUpdateApplication} type="button" className="btn btn-primary">
                 Confirm
               </button>
             </div>
@@ -660,41 +533,21 @@ function TMSMain() {
       </div>
       {/* Modal for Edit Application ===== To Here */}
 
+      <div id="kanBan" style={{ height: "8vh" }}></div>
+
       {/* Section for create plan/task ===== From Here */}
+      {/* div to scroll to here!!! */}
       <div className="d-flex justify-content-between align-items-center pe-4">
         <h4 className="ps-3" value="selectedApp.App_Acronym">
           {selectedApp.App_Acronym}
         </h4>
-        {permission.pm && selectedApp !== "" ? (
-          <CreatePlan
-            applicationName={selectedApp.App_Acronym}
-            fetchPlans={fetchPlans}
-            plans={plans}
-          />
-        ) : (
-          <></>
-        )}
-        {Boolean(permission.pl || permission.create) && selectedApp !== "" ? (
-          <CreateTask
-            username={username}
-            application={selectedApp}
-            fetchTasks={fetchTasks}
-            fetchApplication={fetchApplication}
-            plans={plans}
-          />
-        ) : (
-          <></>
-        )}
+        {permission.pm && selectedApp !== "" ? <CreatePlan applicationName={selectedApp.App_Acronym} fetchPlans={fetchPlans} plans={plans} /> : <></>}
+        {Boolean(permission.pl || permission.create) && selectedApp !== "" ? <CreateTask application={selectedApp} fetchTasks={fetchTasks} fetchApplication={fetchApplication} plans={plans} /> : <></>}
       </div>
       {/* Section for create plan/task ===== To Here */}
 
       {/* Plan bar ===== From Here */}
-      <PlanBar
-        plans={plans}
-        fetchPlans={fetchPlans}
-        permission={permission}
-        selectedApp={selectedApp}
-      />
+      <PlanBar plans={plans} fetchPlans={fetchPlans} permission={permission} selectedApp={selectedApp} />
       {/* Plan bar ===== To Here */}
 
       {/* Task Overview ===== From Here */}
@@ -702,8 +555,8 @@ function TMSMain() {
         <div className="card col m-1">
           <div className="card-header text-center">Open Tasks</div>
           {/* Populate Open Task Card ===== From Here */}
-          {tasks.map((task) => {
-            if (task.Task_state === 1) {
+          {Object.values(tasks).map(task => {
+            if (task.Task_state === "Open") {
               return (
                 <div className="card text-center ms-2 me-2 mt-1">
                   <ColorBar task={task} plans={plans} />
@@ -717,61 +570,33 @@ function TMSMain() {
                       <button
                         className="btn p-0"
                         type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#EditTaskModal"
-                        onClick={() => setSelectedTask(task)}
+                        onClick={() => {
+                          setSelectedTask(task)
+                          new Modal("#EditTaskModal").show()
+                        }}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          className="bi bi-pencil-square"
-                          viewBox="0 0 16 16"
-                        >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" className="bi bi-pencil-square" viewBox="0 0 16 16">
                           <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
-                          <path
-                            fillRule="evenodd"
-                            d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"
-                          />
+                          <path fillRule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z" />
                         </svg>
                       </button>
                       <button
                         className="btn p-0"
                         type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#PromoteTaskModal"
                         onClick={() => {
                           setSelectedTask(task)
+                          new Modal("#PromoteTaskModal").show()
                         }}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          className="bi bi-caret-right-fill"
-                          viewBox="0 0 16 16"
-                        >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" className="bi bi-caret-right-fill" viewBox="0 0 16 16">
                           <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
                         </svg>
                       </button>
                     </div>
                   ) : (
                     <div className="d-flex justify-content-center ps-5 pe-5">
-                      <button
-                        className="btn p-0"
-                        type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#ViewTaskModal"
-                        onClick={() => setSelectedTask(task)}
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          fill="currentColor"
-                          className="bi bi-eye-fill"
-                          viewBox="0 0 16 16"
-                        >
+                      <button className="btn p-0" type="button" data-bs-toggle="modal" data-bs-target="#ViewTaskModal" onClick={() => setSelectedTask(task)}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-eye-fill" viewBox="0 0 16 16">
                           <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z" />
                           <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
                         </svg>
@@ -787,13 +612,10 @@ function TMSMain() {
         <div className="card col m-1">
           <div className="card-header text-center">To-do Tasks</div>
           {/* Populate Todo Task Card ===== From Here */}
-          {tasks.map((task) => {
-            if (task.Task_state === 2) {
+          {Object.values(tasks).map(task => {
+            if (task.Task_state === "To do") {
               return (
-                <div
-                  className="card text-center ms-2 me-2 mt-1"
-                  id={task.Task_id}
-                >
+                <div className="card text-center ms-2 me-2 mt-1" id={task.Task_id}>
                   <ColorBar task={task} plans={plans} />
                   <div className="card-header pt-1 pb-1">
                     <div>{task.Task_id}</div>
@@ -805,59 +627,33 @@ function TMSMain() {
                       <button
                         className="btn p-0"
                         type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#EditTaskModal"
-                        onClick={() => setSelectedTask(task)}
+                        onClick={() => {
+                          setSelectedTask(task)
+                          new Modal("#EditTaskModal").show()
+                        }}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          className="bi bi-pencil-square"
-                          viewBox="0 0 16 16"
-                        >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" className="bi bi-pencil-square" viewBox="0 0 16 16">
                           <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
-                          <path
-                            fillRule="evenodd"
-                            d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"
-                          />
+                          <path fillRule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z" />
                         </svg>
                       </button>
                       <button
                         className="btn p-0"
                         type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#PromoteTaskModal"
-                        onClick={() => setSelectedTask(task)}
+                        onClick={() => {
+                          setSelectedTask(task)
+                          new Modal("#PromoteTaskModal").show()
+                        }}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          className="bi bi-caret-right-fill"
-                          viewBox="0 0 16 16"
-                        >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" className="bi bi-caret-right-fill" viewBox="0 0 16 16">
                           <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
                         </svg>
                       </button>
                     </div>
                   ) : (
                     <div className="d-flex justify-content-center ps-5 pe-5">
-                      <button
-                        className="btn p-0"
-                        type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#ViewTaskModal"
-                        onClick={() => setSelectedTask(task)}
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          fill="currentColor"
-                          className="bi bi-eye-fill"
-                          viewBox="0 0 16 16"
-                        >
+                      <button className="btn p-0" type="button" data-bs-toggle="modal" data-bs-target="#ViewTaskModal" onClick={() => setSelectedTask(task)}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-eye-fill" viewBox="0 0 16 16">
                           <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z" />
                           <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
                         </svg>
@@ -873,13 +669,10 @@ function TMSMain() {
         <div className="card col m-1">
           <div className="card-header text-center">Doing Tasks</div>
           {/* Populate Doing Task Card ===== From Here */}
-          {tasks.map((task) => {
-            if (task.Task_state === 3) {
+          {Object.values(tasks).map(task => {
+            if (task.Task_state === "Doing") {
               return (
-                <div
-                  className="card text-center ms-2 me-2 mt-1"
-                  id={task.Task_id}
-                >
+                <div className="card text-center ms-2 me-2 mt-1" id={task.Task_id}>
                   <ColorBar task={task} plans={plans} />
                   <div className="card-header pt-1 pb-1">
                     <div>{task.Task_id}</div>
@@ -890,76 +683,45 @@ function TMSMain() {
                       <button
                         className="btn p-0"
                         type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#DemoteTaskModal"
-                        onClick={() => setSelectedTask(task)}
+                        onClick={() => {
+                          setSelectedTask(task)
+                          new Modal("#DemoteTaskModal").show()
+                        }}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          className="bi bi-caret-left-fill"
-                          viewBox="0 0 16 16"
-                        >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" className="bi bi-caret-left-fill" viewBox="0 0 16 16">
                           <path d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z" />
                         </svg>
                       </button>
                       <button
                         className="btn p-0"
                         type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#EditTaskModal"
-                        onClick={() => setSelectedTask(task)}
+                        onClick={() => {
+                          setSelectedTask(task)
+                          new Modal("#EditTaskModal").show()
+                        }}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          className="bi bi-pencil-square"
-                          viewBox="0 0 16 16"
-                        >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" className="bi bi-pencil-square" viewBox="0 0 16 16">
                           <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
-                          <path
-                            fillRule="evenodd"
-                            d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"
-                          />
+                          <path fillRule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z" />
                         </svg>
                       </button>
                       <button
                         className="btn p-0"
                         type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#PromoteTaskModal"
-                        onClick={() => setSelectedTask(task)}
+                        onClick={() => {
+                          setSelectedTask(task)
+                          new Modal("#PromoteTaskModal").show()
+                        }}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          className="bi bi-caret-right-fill"
-                          viewBox="0 0 16 16"
-                        >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" className="bi bi-caret-right-fill" viewBox="0 0 16 16">
                           <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
                         </svg>
                       </button>
                     </div>
                   ) : (
                     <div className="d-flex justify-content-center ps-5 pe-5">
-                      <button
-                        className="btn p-0"
-                        type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#ViewTaskModal"
-                        onClick={() => setSelectedTask(task)}
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          fill="currentColor"
-                          className="bi bi-eye-fill"
-                          viewBox="0 0 16 16"
-                        >
+                      <button className="btn p-0" type="button" data-bs-toggle="modal" data-bs-target="#ViewTaskModal" onClick={() => setSelectedTask(task)}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-eye-fill" viewBox="0 0 16 16">
                           <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z" />
                           <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
                         </svg>
@@ -975,13 +737,10 @@ function TMSMain() {
         <div className="card col m-1">
           <div className="card-header text-center">Done Tasks</div>
           {/* Populate Done Task Card ===== From Here */}
-          {tasks.map((task) => {
-            if (task.Task_state === 4) {
+          {Object.values(tasks).map(task => {
+            if (task.Task_state === "Done") {
               return (
-                <div
-                  className="card text-center ms-2 me-2 mt-1"
-                  id={task.Task_id}
-                >
+                <div className="card text-center ms-2 me-2 mt-1" id={task.Task_id}>
                   <ColorBar task={task} plans={plans} />
                   <div className="card-header pt-1 pb-1">
                     <div>{task.Task_id}</div>
@@ -992,76 +751,45 @@ function TMSMain() {
                       <button
                         className="btn p-0"
                         type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#DemoteTaskModal"
-                        onClick={() => setSelectedTask(task)}
+                        onClick={() => {
+                          setSelectedTask(task)
+                          new Modal("#DemoteTaskModal").show()
+                        }}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          className="bi bi-caret-left-fill"
-                          viewBox="0 0 16 16"
-                        >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" className="bi bi-caret-left-fill" viewBox="0 0 16 16">
                           <path d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z" />
                         </svg>
                       </button>
                       <button
                         className="btn p-0"
                         type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#EditTaskModal"
-                        onClick={() => setSelectedTask(task)}
+                        onClick={() => {
+                          setSelectedTask(task)
+                          new Modal("#EditTaskModal").show()
+                        }}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          className="bi bi-pencil-square"
-                          viewBox="0 0 16 16"
-                        >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" className="bi bi-pencil-square" viewBox="0 0 16 16">
                           <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
-                          <path
-                            fillRule="evenodd"
-                            d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"
-                          />
+                          <path fillRule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z" />
                         </svg>
                       </button>
                       <button
                         className="btn p-0"
                         type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#PromoteTaskModal"
-                        onClick={() => setSelectedTask(task)}
+                        onClick={() => {
+                          setSelectedTask(task)
+                          new Modal("#PromoteTaskModal").show()
+                        }}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          className="bi bi-caret-right-fill"
-                          viewBox="0 0 16 16"
-                        >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" className="bi bi-caret-right-fill" viewBox="0 0 16 16">
                           <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
                         </svg>
                       </button>
                     </div>
                   ) : (
                     <div className="d-flex justify-content-center ps-5 pe-5">
-                      <button
-                        className="btn p-0"
-                        type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#ViewTaskModal"
-                        onClick={() => setSelectedTask(task)}
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          fill="currentColor"
-                          className="bi bi-eye-fill"
-                          viewBox="0 0 16 16"
-                        >
+                      <button className="btn p-0" type="button" data-bs-toggle="modal" data-bs-target="#ViewTaskModal" onClick={() => setSelectedTask(task)}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-eye-fill" viewBox="0 0 16 16">
                           <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z" />
                           <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
                         </svg>
@@ -1077,34 +805,18 @@ function TMSMain() {
         <div className="card col m-1">
           <div className="card-header text-center">Closed Tasks</div>
           {/* Populate Closed Task Card ===== From Here */}
-          {tasks.map((task) => {
-            if (task.Task_state === 5) {
+          {Object.values(tasks).map(task => {
+            if (task.Task_state === "Closed") {
               return (
-                <div
-                  className="card text-center ms-2 me-2 mt-1"
-                  id={task.Task_id}
-                >
+                <div className="card text-center ms-2 me-2 mt-1" id={task.Task_id}>
                   <ColorBar task={task} plans={plans} />
                   <div className="card-header pt-1 pb-1">
                     <div>{task.Task_id}</div>
                     <div>{task.Task_name}</div>
                   </div>
                   <div className="d-flex justify-content-center ps-5 pe-5">
-                    <button
-                      className="btn p-0"
-                      type="button"
-                      data-bs-toggle="modal"
-                      data-bs-target="#ViewTaskModal"
-                      onClick={() => setSelectedTask(task)}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        fill="currentColor"
-                        className="bi bi-eye-fill"
-                        viewBox="0 0 16 16"
-                      >
+                    <button className="btn p-0" type="button" data-bs-toggle="modal" data-bs-target="#ViewTaskModal" onClick={() => setSelectedTask(task)}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-eye-fill" viewBox="0 0 16 16">
                         <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z" />
                         <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
                       </svg>
@@ -1118,35 +830,10 @@ function TMSMain() {
         </div>
       </div>
       {/* Task Overview ===== To Here */}
-      <PromoteTaskModal
-        selectedApp={selectedApp}
-        fetchTasks={fetchTasks}
-        username={username}
-        selectedTask={selectedTask}
-        plans={plans}
-        resetSetTask={resetSetTask}
-      />
-      <EditTaskModal
-        selectedApp={selectedApp}
-        fetchTasks={fetchTasks}
-        username={username}
-        selectedTask={selectedTask}
-        plans={plans}
-        resetSetTask={resetSetTask}
-      />
-      <DemoteTaskModal
-        selectedApp={selectedApp}
-        fetchTasks={fetchTasks}
-        username={username}
-        selectedTask={selectedTask}
-        plans={plans}
-        resetSetTask={resetSetTask}
-      />
-      <ViewTaskModal
-        selectedApp={selectedApp}
-        selectedTask={selectedTask}
-        plans={plans}
-      />
+      <PromoteTaskModal selectedApp={selectedApp} fetchTasks={fetchTasks} selectedTask={selectedTask} plans={plans} resetSetTask={resetSetTask} />
+      <EditTaskModal selectedApp={selectedApp} fetchTasks={fetchTasks} username={username} selectedTask={selectedTask} plans={plans} resetSetTask={resetSetTask} />
+      <DemoteTaskModal selectedApp={selectedApp} fetchTasks={fetchTasks} username={username} selectedTask={selectedTask} plans={plans} resetSetTask={resetSetTask} />
+      <ViewTaskModal selectedApp={selectedApp} selectedTask={selectedTask} plans={plans} />
     </div>
   )
 }

@@ -26,7 +26,14 @@ function CreatePlan({ applicationName, fetchPlans, plans }) {
 
     if (validation) {
       try {
-        const response = await Axios.post(`/plan/create`, { Plan_MVP_name: planName, Plan_startDate: planStartDate, Plan_endDate: planEndDate, Plan_colour: planColour, Plan_appAcronym: applicationName })
+        const response = await Axios.post(`/plan/create`, {
+          Plan_MVP_name: planName,
+          Plan_startDate: planStartDate,
+          Plan_endDate: planEndDate,
+          Plan_colour: planColour,
+          Plan_appAcronym: applicationName
+        })
+
         if (response.data.result === "BSJ370") {
           appDispatch({ type: "loggedOut" })
           appDispatch({ type: "errorToast", data: "Token expired. You have been logged out." })

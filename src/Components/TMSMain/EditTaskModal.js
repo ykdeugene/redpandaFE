@@ -1,67 +1,81 @@
-import React, { useState } from "react"
+import React, { useState, useContext, useEffect } from "react"
+import { Modal } from "bootstrap"
+import validator from "validator"
 import Axios from "axios"
 import DispatchContext from "../../DispatchContext"
-import { useContext } from "react"
 
-function EditTaskModal({ selectedTask, plans, username, fetchTasks, resetSetTask }) {
+function EditTaskModal({ selectedTask, fetchTasks, plans, resetSetTask }) {
   const appDispatch = useContext(DispatchContext)
   const [taskUpdatedPlan, setTaskUpdatedPlan] = useState(false)
   const [taskNotes, setTaskNotes] = useState("")
+  const [toggleBtn, setToggleBtn] = useState(false)
 
-  async function handleEditApplication() {
-    const taskNewState = selectedTask.Task_state
-
+  async function handleEditTask() {
+    setToggleBtn(true)
     let taskNewPlan
 
-    if (selectedTask.Task_state === 2 || selectedTask.Task_state === 3 || selectedTask.Task_state === 4) {
+    if (selectedTask.Task_state === "To do" || selectedTask.Task_state === "Doing") {
+      taskNewPlan = selectedTask.Task_plan
+    } else if (taskUpdatedPlan === false) {
       taskNewPlan = selectedTask.Task_plan
     } else {
-      if (taskUpdatedPlan || taskUpdatedPlan === "") {
-        taskNewPlan = taskUpdatedPlan
-      } else {
-        taskNewPlan = selectedTask.Task_plan
-      }
+      taskNewPlan = taskUpdatedPlan
     }
 
-    let dateTime = new Date()
+    let notesValidation
 
-    const taskNotesComplete = `
-==============================
-Notes: ${taskNotes}
-------------------------------
-UserID: ${username}
-Action: Edit Task in ${["Open", "To-do", "Doing", "Done", "Closed"][taskNewState - 1]} State
-Date/Time: ${dateTime}
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-${selectedTask.Task_notes}`
+    if (taskNotes === "") {
+      notesValidation = true
+    } else {
+      notesValidation = validator.isAscii(taskNotes)
+    }
 
-    let taskOwner = username
-    let taskID = selectedTask.Task_id
+    let validation = Boolean(notesValidation)
 
-    try {
-      const response = await Axios.put(`/tms/update_task_status`, { taskNotesComplete, taskNewPlan, taskNewState, taskOwner, taskID })
-      if (response.data.result === "BSJ370") {
-        appDispatch({ type: "loggedOut" })
-        appDispatch({ type: "errorToast", data: "Token expired. You have been logged out." })
-        return
+    if (validation) {
+      console.log("sending")
+      try {
+        const response = await Axios.post(`/task/update`, {
+          Task_notes: taskNotes,
+          Task_plan: taskNewPlan,
+          Task_id: selectedTask.Task_id,
+          Option: "update"
+        })
+
+        if (response.data.result === "BSJ370") {
+          appDispatch({ type: "loggedOut" })
+          appDispatch({ type: "errorToast", data: "Token expired. You have been logged out." })
+          return
+        }
+
+        if (response.data.result === "true") {
+          Modal.getInstance(document.getElementById("EditTaskModal")).hide()
+          appDispatch({ type: "successToast", data: `${selectedTask.Task_id} has been updated.` })
+          var modal = document.getElementById("EditTaskModal")
+          var form = modal.querySelector("form")
+          form.reset()
+          setTaskNotes("")
+          setTaskUpdatedPlan(false)
+          fetchTasks()
+          resetSetTask()
+          setToggleBtn(false)
+          return
+        } else {
+          setToggleBtn(false)
+          appDispatch({ type: "errorToast", data: `No updates made to ${selectedTask.Task_id}` })
+          return
+        }
+      } catch (e) {
+        setToggleBtn(false)
+        console.log(e)
+        appDispatch({ type: "errorToast", data: "Please contact an administrator. (handleUpdateApplication catch(e))" })
       }
-      if (response.data === true) {
-        appDispatch({ type: "successToast", data: `${selectedTask.Task_id} has been updated.` })
-        var modal = document.getElementById("EditTaskModal")
-        var form = modal.querySelector("form")
-        form.reset()
-        fetchTasks()
-        resetSetTask()
-        setTaskUpdatedPlan(false)
-        setTaskNotes("")
-        return
-      } else {
-        appDispatch({ type: "errorToast", data: `No updates made to ${selectedTask.Task_id}` })
-        return
+    } else {
+      setToggleBtn(false)
+      appDispatch({ type: "errorToast", data: `No updates made to ${selectedTask.Task_id}.` })
+      if (!notesValidation) {
+        appDispatch({ type: "errorToast", data: `Please check notes again. (ASCII only)` })
       }
-    } catch (e) {
-      console.log(e)
-      appDispatch({ type: "errorToast", data: "Please contact an administrator. (handleUpdateApplication catch(e))" })
     }
   }
 
@@ -81,7 +95,7 @@ ${selectedTask.Task_notes}`
           <div className="modal-content">
             <div className="modal-header pt-1 pb-1">
               <div>
-                <h1 className="modal-title fs-3">{`Edit Task - ${selectedTask.Task_name} (${["Open", "To-do", "Doing", "Done", "Closed"][selectedTask.Task_state - 1]})`}</h1>
+                <h1 className="modal-title fs-3">{`Edit Task - ${selectedTask.Task_name} (${selectedTask.Task_state})`}</h1>
                 Created by {selectedTask.Task_creator} on {selectedTask.Task_createDate}
               </div>
               <button type="button" className="ms-2 btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -113,7 +127,7 @@ ${selectedTask.Task_notes}`
                         onChange={e => {
                           setTaskUpdatedPlan(e.target.value)
                         }}
-                        disabled={Boolean(selectedTask.Task_state === 2 || selectedTask.Task_state === 3 || selectedTask.Task_state === 4)}
+                        disabled={Boolean(selectedTask.Task_state === "To do" || selectedTask.Task_state === "Doing")}
                         className="form-select"
                         id="planDropDownList"
                         style={{ width: "30vh" }}
@@ -122,6 +136,7 @@ ${selectedTask.Task_notes}`
                         {plans.map(plan => {
                           return (
                             <option selected={selectedTask.Task_plan === plan.Plan_MVP_name} key={plan.Plan_MVP_name} value={plan.Plan_MVP_name}>
+                              {/* <option key={plan.Plan_MVP_name} value={plan.Plan_MVP_name}> */}
                               {plan.Plan_MVP_name}
                             </option>
                           )
@@ -164,7 +179,7 @@ ${selectedTask.Task_notes}`
               <button onClick={closeTaskModal} type="button" className="btn btn-secondary" data-bs-dismiss="modal">
                 Cancel
               </button>
-              <button onClick={handleEditApplication} type="button" className="btn btn-primary" data-bs-dismiss="modal">
+              <button onClick={handleEditTask} disabled={toggleBtn} type="button" className="btn btn-primary">
                 Confirm
               </button>
             </div>

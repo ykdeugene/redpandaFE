@@ -1,98 +1,87 @@
-import React, { useEffect, useState, useContext } from "react"
+import React, { useState, useContext, useEffect } from "react"
+import { Modal } from "bootstrap"
+import validator from "validator"
 import Axios from "axios"
 import DispatchContext from "../../DispatchContext"
 
-function PromoteTaskModal({ selectedTask, username, fetchTasks, plans, resetSetTask }) {
+function PromoteTaskModal({ selectedTask, fetchTasks, plans, resetSetTask }) {
   const appDispatch = useContext(DispatchContext)
   const [taskUpdatedPlan, setTaskUpdatedPlan] = useState(false)
   const [taskNotes, setTaskNotes] = useState("")
-
-  async function sendEmail() {
-    let taskID = selectedTask.Task_id
-    let taskName = selectedTask.Task_name
-    let taskOwner = username
-
-    try {
-      const response = await Axios.post(`/tms/send_email`, { taskID, taskName, taskOwner })
-      if (response) {
-        appDispatch({ type: "successToast", data: `ProjectLead groups has been notified.` })
-      }
-    } catch (e) {
-      console.log(e)
-      appDispatch({ type: "errorToast", data: `Please contact an administrator. (sendEmail catch(e))` })
-    }
-  }
+  const [toggleBtn, setToggleBtn] = useState(false)
 
   async function handlePromoteTask() {
-    const taskNewState = selectedTask.Task_state + 1
-
+    setToggleBtn(true)
     let taskNewPlan
 
-    if (selectedTask.Task_state === 2 || selectedTask.Task_state === 3) {
+    if (selectedTask.Task_state === "To do" || selectedTask.Task_state === "Doing" || selectedTask.Task_state === "Done") {
+      taskNewPlan = selectedTask.Task_plan
+    } else if (taskUpdatedPlan === false) {
       taskNewPlan = selectedTask.Task_plan
     } else {
-      if (taskUpdatedPlan || taskUpdatedPlan === "") {
-        taskNewPlan = taskUpdatedPlan
-      } else {
-        taskNewPlan = selectedTask.Task_plan
-      }
+      taskNewPlan = taskUpdatedPlan
     }
 
-    let dateTime = new Date()
+    let planValidation = !Boolean(taskNewPlan === "" || taskNewPlan === false)
 
-    const taskNotesComplete = `
-==============================
-Notes: ${taskNotes}
-------------------------------
-UserID: ${username}
-Action: Promote Task to ${["Open", "To-do", "Doing", "Done", "Closed"][taskNewState - 1]} state
-Date/Time: ${dateTime}
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-${selectedTask.Task_notes}`
+    let notesValidation
 
-    let taskOwner = username
-    let taskID = selectedTask.Task_id
+    if (taskNotes === "") {
+      notesValidation = true
+    } else {
+      notesValidation = validator.isAscii(taskNotes)
+    }
 
-    let validation = !Boolean(taskNewPlan === "" || taskNewPlan === false)
+    let validation = Boolean(planValidation && notesValidation)
+    console.log(taskNotes)
 
     if (validation) {
+      console.log("sending")
       try {
-        const response = await Axios.put(`/tms/update_task_status`, { taskNotesComplete, taskNewPlan, taskNewState, taskOwner, taskID })
+        const response = await Axios.post(`/task/update`, {
+          Task_notes: taskNotes,
+          Task_plan: taskNewPlan,
+          Task_id: selectedTask.Task_id,
+          Option: "promote"
+        })
+
         if (response.data.result === "BSJ370") {
           appDispatch({ type: "loggedOut" })
           appDispatch({ type: "errorToast", data: "Token expired. You have been logged out." })
           return
         }
 
-        if (response.data === true) {
+        if (response.data.result === "true") {
+          Modal.getInstance(document.getElementById("PromoteTaskModal")).hide()
           appDispatch({ type: "successToast", data: `${selectedTask.Task_id} has been promoted.` })
           var modal = document.getElementById("PromoteTaskModal")
           var form = modal.querySelector("form")
           form.reset()
           setTaskNotes("")
           setTaskUpdatedPlan(false)
-
-          if (taskNewState === 4) {
-            sendEmail()
-            fetchTasks()
-            resetSetTask()
-          } else {
-            fetchTasks()
-            resetSetTask()
-          }
-
+          fetchTasks()
+          resetSetTask()
+          setToggleBtn(false)
           return
         } else {
+          setToggleBtn(false)
           appDispatch({ type: "errorToast", data: `No updates made to ${selectedTask.Task_id}` })
           return
         }
       } catch (e) {
+        setToggleBtn(false)
         console.log(e)
         appDispatch({ type: "errorToast", data: "Please contact an administrator. (handleUpdateApplication catch(e))" })
       }
     } else {
-      appDispatch({ type: "errorToast", data: `No updates made to ${selectedTask.Task_id}. Please check input fields again.` })
-      resetSetTask()
+      setToggleBtn(false)
+      appDispatch({ type: "errorToast", data: `No updates made to ${selectedTask.Task_id}.` })
+      if (!planValidation) {
+        appDispatch({ type: "errorToast", data: `Please select a plan.` })
+      }
+      if (!notesValidation) {
+        appDispatch({ type: "errorToast", data: `Please check notes again. (ASCII only)` })
+      }
     }
   }
 
@@ -112,7 +101,7 @@ ${selectedTask.Task_notes}`
           <div className="modal-content">
             <div className="modal-header pt-1 pb-1">
               <div>
-                <h1 className="modal-title fs-3">{`Promote Task - ${selectedTask.Task_name} (${["Open", "To-do", "Doing", "Done", "Closed"][selectedTask.Task_state - 1]})`}</h1>
+                <h1 className="modal-title fs-3">{`Promote Task - ${selectedTask.Task_name} (${selectedTask.Task_state})`}</h1>
                 Created by {selectedTask.Task_creator} on {selectedTask.Task_createDate}
               </div>
               <button type="button" className="ms-2 btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -144,7 +133,7 @@ ${selectedTask.Task_notes}`
                         onChange={e => {
                           setTaskUpdatedPlan(e.target.value)
                         }}
-                        disabled={Boolean(selectedTask.Task_state === 2 || selectedTask.Task_state === 3 || selectedTask.Task_state === 4)}
+                        disabled={Boolean(selectedTask.Task_state === "To do" || selectedTask.Task_state === "Doing" || selectedTask.Task_state === "Done")}
                         className="form-select"
                         id="planDropDownList"
                         style={{ width: "30vh" }}
@@ -196,7 +185,7 @@ ${selectedTask.Task_notes}`
               <button onClick={closeTaskModal} type="button" className="btn btn-secondary" data-bs-dismiss="modal">
                 Cancel
               </button>
-              <button onClick={handlePromoteTask} type="button" className="btn btn-primary" data-bs-dismiss="modal">
+              <button onClick={handlePromoteTask} disabled={toggleBtn} type="button" className="btn btn-primary">
                 Confirm
               </button>
             </div>

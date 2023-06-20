@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from "react"
 import Axios from "axios"
+import { Modal } from "bootstrap"
 import DispatchContext from "../../DispatchContext"
 
 function PlanBar({ plans, fetchPlans, permission }) {
@@ -36,14 +37,23 @@ function PlanBar({ plans, fetchPlans, permission }) {
 
     if (validation) {
       try {
-        const response = await Axios.put(`/tms/update_plan`, { planName, applicationName, planEditColour, planEditEndDate, planEditStartDate })
+        const response = await Axios.post(`/plan/update`, {
+          Plan_MVP_name: planName,
+          Plan_appAcronym: applicationName,
+          Plan_colour: planEditColour,
+          Plan_endDate: planEditEndDate,
+          Plan_startDate: planEditStartDate
+        })
+
         if (response.data.result === "BSJ370") {
           appDispatch({ type: "loggedOut" })
           appDispatch({ type: "errorToast", data: "Token expired. You have been logged out." })
           return
         }
 
-        if (response.data === true) {
+        if (response.data.result === "true") {
+          Modal.getInstance(document.getElementById("planModal")).hide()
+
           appDispatch({ type: "successToast", data: `${planName} updated.` })
           var modal = document.getElementById("planModal")
           var form = modal.querySelector("form")
@@ -62,7 +72,8 @@ function PlanBar({ plans, fetchPlans, permission }) {
       var modal = document.getElementById("planModal")
       var form = modal.querySelector("form")
       form.reset()
-      appDispatch({ type: "errorToast", data: `No updates made to ${planName}. Please check input fields again.` })
+      appDispatch({ type: "errorToast", data: `No updates made to ${planName}.` })
+      appDispatch({ type: "errorToast", data: `Please check end date is later than start date.` })
     }
   }
 
@@ -70,23 +81,22 @@ function PlanBar({ plans, fetchPlans, permission }) {
     if (selectedPlan) {
       fetchPlans()
       document.getElementById("editPlanColour").value = selectedPlan.Plan_colour
-      console.log(selectedPlan)
     }
   }, [selectedPlan])
 
   return (
     <>
-      {/* div to scroll to here!!! */}
-      <div id="kanBan" className="d-flex align-items-center ms-3 mt-1" style={{ height: "7vh" }}>
+      <div className="d-flex align-items-center ms-3 mt-1" style={{ height: "7vh" }}>
         {plans.map(plan => {
           return (
             <div key={plan.Plan_MVP_name} className="d-flex align-items-center me-2">
               <button
                 className="d-flex align-items-center border btn-light btn"
-                data-bs-toggle="modal"
-                data-bs-target="#planModal"
                 onClick={() => {
                   setSelectedPlan(plan)
+
+                  const editPlanModal = new Modal("#planModal")
+                  editPlanModal.show()
                 }}
                 style={{ height: "5vh" }}
               >
@@ -141,7 +151,7 @@ function PlanBar({ plans, fetchPlans, permission }) {
                   <button onClick={handleCloseEdit} type="button" className="btn btn-secondary me-2" data-bs-dismiss="modal">
                     Cancel
                   </button>
-                  <button onClick={handleEditPlan} type="button" className="btn btn-primary" data-bs-dismiss="modal">
+                  <button onClick={handleEditPlan} type="button" className="btn btn-primary">
                     Confirm
                   </button>
                 </div>

@@ -1,59 +1,22 @@
 import React, { useState, useEffect, useContext } from "react"
 import Axios from "axios"
+import { Offcanvas } from "bootstrap"
 import validator from "validator"
 import DispatchContext from "../../DispatchContext"
 
-function CreateTask({ application, fetchTasks, plans, username, fetchApplication }) {
+function CreateTask({ application, fetchTasks, plans, fetchApplication }) {
   const appDispatch = useContext(DispatchContext)
-  const [taskName, setTaskName] = useState("")
   const [taskNameOC, setTaskNameOC] = useState("")
   const [taskDescription, setTaskDescription] = useState("")
   const [taskPlan, setTaskPlan] = useState("")
-  const taskOwner = username
-  const taskCreator = username
   let appName = application.App_Acronym
-  let taskCreateDate = new Date().toLocaleDateString().replaceAll("/", "-")
-
-  async function handleFastCreateTask() {
-    let validation = validator.isAlphanumeric(taskName)
-
-    let dateTime = new Date()
-
-    let taskNotes = `
-==============================
-UserID: ${username}
-State: Task Created.
-Date/Time: ${dateTime}
-==============================`
-
-    if (validation) {
-      try {
-        const response = await Axios.post("/tms/create_task", { taskName, taskNotes, taskDescription, taskPlan, appName, taskCreator, taskOwner, taskCreateDate })
-        if (response.data === true) {
-          appDispatch({ type: "successToast", data: "New Task is created." })
-          setTaskName("")
-          fetchTasks()
-          fetchApplication()
-        } else if (response.data.result === "BSJ370") {
-          appDispatch({ type: "loggedOut" })
-          appDispatch({ type: "errorToast", data: "Token expired. You have been logged out." })
-        } else {
-          appDispatch({ type: "errorToast", data: "New Task not created. Please check input fields again." })
-        }
-      } catch (e) {
-        console.log(e)
-        appDispatch({ type: "errorToast", data: "Please contact an administrator." })
-      }
-    } else {
-      appDispatch({ type: "errorToast", data: "New Task not created. Please check input fields again." })
-    }
-  }
 
   async function handleCreateTaskOC() {
     let mandatoryFieldsCheck = !Boolean(taskNameOC === "")
     let taskNameValidation = validator.isAscii(taskNameOC) // validates ascii only
     let taskNameValidation2 = !Boolean(taskNameOC[0] === " ") // validates that the starting char is not a space
     let taskDescriptionValidation = false
+
     if (taskDescription !== "") {
       taskDescriptionValidation = validator.isAscii(taskDescription)
     } else {
@@ -61,19 +24,23 @@ Date/Time: ${dateTime}
     }
     let validation = Boolean(mandatoryFieldsCheck && taskNameValidation && taskNameValidation2 && taskDescriptionValidation)
 
-    let dateTime = new Date()
-
-    let taskNotes = `
-==============================
-UserID: ${username}
-Action: Task Created.
-Date/Time: ${dateTime}
-==============================`
-
     if (validation) {
+      console.log({
+        Task_name: taskNameOC,
+        Task_description: taskDescription,
+        Task_plan: taskPlan,
+        Task_app_Acronym: appName
+      })
+
       try {
-        const response = await Axios.post("/tms/create_task", { taskNameOC, taskNotes, taskDescription, taskPlan, appName, taskCreator, taskOwner, taskCreateDate })
-        if (response.data === true) {
+        const response = await Axios.post("/task/create", {
+          Task_name: taskNameOC,
+          Task_description: taskDescription,
+          Task_plan: taskPlan,
+          Task_app_Acronym: appName
+        })
+        if (response.data.result === "true") {
+          Offcanvas.getInstance(document.getElementById("createTaskFormOC")).hide()
           appDispatch({ type: "successToast", data: "New Task is created." })
           setTaskNameOC("")
           setTaskDescription("")
@@ -91,38 +58,28 @@ Date/Time: ${dateTime}
         appDispatch({ type: "errorToast", data: "Please contact an administrator." })
       }
     } else {
-      appDispatch({ type: "errorToast", data: "New Task not created. Please check input fields again." })
+      appDispatch({ type: "errorToast", data: "New Task not created." })
+      if (!taskNameValidation || !taskNameValidation2) {
+        appDispatch({ type: "errorToast", data: "Please check Task Name again. (ASCII only)" })
+      }
+      if (!taskDescriptionValidation) {
+        appDispatch({ type: "errorToast", data: "Please check Description again. (ASCII only)" })
+      }
     }
   }
 
   return (
     <>
-      <button className="btn btn-secondary" data-bs-toggle="offcanvas" data-bs-target="#createTaskFormOC">
+      <button
+        className="btn btn-secondary"
+        onClick={() => {
+          new Offcanvas("#createTaskFormOC").show()
+        }}
+      >
         Create Task
       </button>
-      {/* <div className="input-group" style={{ width: "60vh" }}>
-        <input
-          onChange={e => {
-            setTaskName(e.target.value)
-          }}
-          value={taskName}
-          id="taskName"
-          placeholder="Task Name"
-          className="form-control"
-          type="text"
-        />
-        {Boolean(taskName === "") ? (
-          <button className="btn btn-secondary" data-bs-toggle="offcanvas" data-bs-target="#createTaskFormOC">
-            Create Task
-          </button>
-        ) : (
-          <button onClick={handleFastCreateTask} className="btn btn-secondary">
-            Fast Create
-          </button>
-        )}
-      </div> */}
 
-      <div className="offcanvas offcanvas-start" id="createTaskFormOC" style={{ width: "70vh" }}>
+      <div className="offcanvas offcanvas-start" data-bs-backdrop="static" id="createTaskFormOC" style={{ width: "70vh" }}>
         <div className="offcanvas-header pb-1">
           <h3 className="offcanvas-title">New Task</h3>
           <button type="button" className="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
@@ -153,7 +110,7 @@ Date/Time: ${dateTime}
               </label>
               <textarea onChange={e => setTaskDescription(e.target.value)} value={taskDescription} type="text" className="form-control" id="taskDescription" style={{ height: "20vh" }} />
             </div>
-            <button onClick={handleCreateTaskOC} type="button" className="btn btn-primary mt-3" data-bs-dismiss="offcanvas">
+            <button onClick={handleCreateTaskOC} type="button" className="btn btn-primary mt-3">
               Create
             </button>
           </form>
